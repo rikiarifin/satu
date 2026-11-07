@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SATU · SMP Negeri 3 Sepatan Timur</title>
+<link rel="icon" type="image/svg+xml" href="/satu/ikon.svg">
+<meta name="description" content="SATU - Sistem Administrasi Tata Usaha SMP Negeri 3 Sepatan Timur">
+<meta name="author" content="Riki Arifin, S.Psi">
+<meta name="theme-color" content="#0B1F3A">
+<style>
+  html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#0B1F3A;color:#fff}
+  #muat{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;box-sizing:border-box}
+  #logo{width:88px;height:88px;animation:muncul .6s ease-out}
+  @keyframes muncul{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+  .putar{width:34px;height:34px;border:4px solid rgba(242,183,5,.3);border-top-color:#F2B705;border-radius:50%;animation:p .9s linear infinite}
+  @keyframes p{to{transform:rotate(360deg)}}
+  h1{margin:0;font-size:28px;letter-spacing:2px}
+  p{margin:0;color:#cbd5e1;font-size:14px}
+  .gagal{display:none;max-width:380px}
+  .gagal a,.gagal button{display:inline-block;margin:6px;padding:10px 16px;border-radius:10px;border:0;font-size:14px;font-weight:bold;cursor:pointer;text-decoration:none}
+  .gagal button{background:#F2B705;color:#0B1F3A}.gagal a{background:rgba(255,255,255,.15);color:#fff}
+  .kaki{font-size:11px;color:#94a3b8}
+</style>
+</head>
+<body>
+<div id="muat">
+  <img id="logo" alt="Logo SATU" src="/satu/ikon.svg">
+  <h1>SATU</h1>
+  <p>Sistem Administrasi Tata Usaha · SMP Negeri 3 Sepatan Timur</p>
+  <div class="putar" id="putar"></div>
+  <p id="pesan">Memuat aplikasi&hellip;</p>
+  <div class="gagal" id="gagal">
+    <p>Aplikasi belum bisa dimuat. Periksa koneksi internet lalu coba lagi.</p>
+    <button type="button" onclick="location.reload()">Coba lagi</button>
+    <a id="alt" href="#">Buka cara lama</a>
+  </div>
+  <p class="kaki">By Riki Arifin, S.Psi</p>
+</div>
+<script>
+/* Halaman pembuka SATU. File ini TIDAK perlu diubah setiap kali aplikasi diperbarui:
+   tampilan selalu diambil dari Apps Script versi terbaru (?mode=html), dan semua perintah ke server
+   dikirim lewat doPost TANPA akun Google - jadi Chrome yang login banyak akun tetap bisa membuka. */
+var SATU_API = 'https://script.google.com/macros/s/AKfycbwpfAt1-Fr4v2DXK4zNylUqpFRul4L_JcMuUkbQjOWgcqax1KryUKuzkXMoSo0zzSNX/exec';
+document.getElementById('alt').href = SATU_API;
+var IKON_HTML = '<link rel="icon" type="image/svg+xml" href="/satu/ikon.svg"><link rel="apple-touch-icon" href="/satu/ikon.svg">';
+
+function satuShim() {
+  // Pengganti google.script.run: rantai withSuccessHandler/withFailureHandler/withUserObject lalu
+  // nama fungsi server -> dikirim sebagai {fn, args} ke doPost, hasilnya diteruskan ke handler.
+  function kirim(nama, args, st) {
+    fetch(window.SATU_API, {
+      method: 'POST', credentials: 'omit',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ fn: nama, args: args })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Server sedang sibuk (' + r.status + '). Coba lagi sebentar.');
+      return r.json();
+    }).then(function (res) {
+      if (res && res.ok) { if (st.ok) st.ok(res.result, st.uo); }
+      else { var e = new Error((res && res.error) || 'Permintaan gagal.'); if (st.gagal) st.gagal(e, st.uo); else console.error(e); }
+    }).catch(function (err) {
+      var e = err instanceof Error ? err : new Error(String(err));
+      if (/Failed to fetch|NetworkError|Load failed/i.test(e.message)) e = new Error('Gagal menghubungi server. Periksa koneksi internet Anda.');
+      if (st.gagal) st.gagal(e, st.uo); else console.error(e);
+    });
+  }
+  function runner(st) {
+    return new Proxy({}, {
+      get: function (_, nama) {
+        if (nama === 'withSuccessHandler') return function (f) { return runner(Object.assign({}, st, { ok: f })); };
+        if (nama === 'withFailureHandler') return function (f) { return runner(Object.assign({}, st, { gagal: f })); };
+        if (nama === 'withUserObject') return function (o) { return runner(Object.assign({}, st, { uo: o })); };
+        if (typeof nama !== 'string' || nama === 'then') return undefined;
+        return function () { kirim(nama, Array.prototype.slice.call(arguments), st); };
+      }
+    });
+  }
+  window.google = window.google || {};
+  window.google.script = {
+    run: runner({}),
+    host: { close: function () {}, setHeight: function () {}, setWidth: function () {}, editor: {} },
+    url: { getLocation: function (cb) { cb({ hash: location.hash.slice(1), parameter: {}, parameters: {} }); } }
+  };
+  window.__satuLewatPembuka = true;
+}
+
+function gagalMuat(err) {
+  document.getElementById('putar').style.display = 'none';
+  document.getElementById('pesan').style.display = 'none';
+  document.getElementById('gagal').style.display = 'block';
+  if (window.console) console.error(err);
+}
+
+// Tampilan aplikasi disimpan di perangkat (Cache browser). Kunjungan berikutnya langsung tampil dari
+// simpanan, sementara versi terbaru diambil diam-diam dan dipakai pada kunjungan selanjutnya.
+var CACHE_NAMA = 'satu-tampilan', CACHE_URL = location.origin + '/__satu/smpn3septim.html';
+function ambilTampilanBaru() {
+  return fetch(SATU_API + '?mode=html&t=' + Date.now(), { credentials: 'omit', cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+    .then(function (html) { if (html.indexOf('<html') === -1) throw new Error('Isi tidak dikenal'); return html; });
+}
+function simpanTampilan(html) {
+  try {
+    if (!window.caches) return Promise.resolve();
+    return caches.open(CACHE_NAMA).then(function (c) {
+      return c.put(CACHE_URL, new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } }));
+    }).catch(function () {});
+  } catch (e) { return Promise.resolve(); }
+}
+function bacaTampilan() {
+  try {
+    if (!window.caches) return Promise.resolve(null);
+    return caches.open(CACHE_NAMA).then(function (c) { return c.match(CACHE_URL); })
+      .then(function (r) { return r ? r.text() : null; }).catch(function () { return null; });
+  } catch (e) { return Promise.resolve(null); }
+}
+// Dijalankan DI DALAM halaman aplikasi (setelah tampil dari simpanan): ambil versi terbaru di latar.
+function segarkanLatar(api, nama, url) {
+  setTimeout(function () {
+    fetch(api + '?mode=html&t=' + Date.now(), { credentials: 'omit', cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+      .then(function (html) {
+        if (html.indexOf('<html') === -1 || !window.caches) return;
+        return caches.open(nama).then(function (c) {
+          return c.put(url, new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } }));
+        });
+      }).catch(function () {});
+  }, 4000);
+}
+function tampilkan(html, dariSimpanan) {
+  var shim = IKON_HTML + '<script>window.SATU_API=' + JSON.stringify(SATU_API) + ';(' + satuShim.toString() + ')();';
+  if (dariSimpanan) shim += '(' + segarkanLatar.toString() + ')(' + JSON.stringify(SATU_API) + ',' + JSON.stringify(CACHE_NAMA) + ',' + JSON.stringify(CACHE_URL) + ');';
+  shim += '<\/script>';
+  html = html.replace(/<head[^>]*>/i, function (m) { return m + shim; });
+  document.open();
+  document.write(html);
+  document.close();
+}
+bacaTampilan().then(function (lama) {
+  if (lama && lama.indexOf('<html') !== -1) tampilkan(lama, true);
+  else ambilTampilanBaru().then(function (html) {
+    return simpanTampilan(html).then(function () { tampilkan(html, false); });
+  }).catch(gagalMuat);
+});
+</script>
+</body>
+</html>
