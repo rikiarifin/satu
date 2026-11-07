@@ -9,9 +9,9 @@
 <link rel="apple-touch-icon" href="/satu/ikon-192.png">
 <meta name="description" content="SATU - Sistem Administrasi Tata Usaha SMP Negeri 3 Sepatan Timur">
 <meta name="author" content="Riki Arifin, S.Psi">
-<meta name="theme-color" content="#0B1F3A">
+<meta name="theme-color" content="#071431">
 <style>
-  html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#0B1F3A;color:#fff}
+  html,body{margin:0;height:100%;font-family:Arial,Helvetica,sans-serif;background:#071431;color:#fff}
   #muat{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;box-sizing:border-box}
   #logo{width:88px;height:88px;animation:muncul .6s ease-out}
   @keyframes muncul{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
@@ -26,18 +26,17 @@
 </style>
 </head>
 <body>
+<!-- Tanpa layar "memuat": latar sama dengan halaman login SATU, lalu langsung diganti tampilan aplikasi.
+     Logo & pesan hanya muncul bila aplikasi gagal dimuat. -->
 <div id="muat">
-  <img id="logo" alt="Logo SATU" src="/satu/ikon.svg">
-  <h1>SATU</h1>
-  <p>Sistem Administrasi Tata Usaha · SMP Negeri 3 Sepatan Timur</p>
-  <div class="putar" id="putar"></div>
-  <p id="pesan">Memuat aplikasi&hellip;</p>
   <div class="gagal" id="gagal">
+    <img id="logo" alt="Logo SATU" src="/satu/ikon.svg">
+    <h1>SATU</h1>
     <p>Aplikasi belum bisa dimuat. Periksa koneksi internet lalu coba lagi.</p>
     <button type="button" onclick="location.reload()">Coba lagi</button>
     <a id="alt" href="#">Buka cara lama</a>
+    <p class="kaki">By Riki Arifin, S.Psi</p>
   </div>
-  <p class="kaki">By Riki Arifin, S.Psi</p>
 </div>
 <script>
 /* Halaman pembuka SATU. File ini TIDAK perlu diubah setiap kali aplikasi diperbarui:
@@ -102,8 +101,6 @@ function satuShim() {
 }
 
 function gagalMuat(err) {
-  document.getElementById('putar').style.display = 'none';
-  document.getElementById('pesan').style.display = 'none';
   document.getElementById('gagal').style.display = 'block';
   if (window.console) console.error(err);
 }
